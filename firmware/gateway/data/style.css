@@ -1,0 +1,446 @@
+/* ═══════════════════════════════════════════════════════════════════
+   DairyLedger Dashboard — Styles
+   Clean, mobile-friendly design for fridge monitoring
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+    --bg:        #1a1b2e;
+    --surface:   #252740;
+    --card:      #2d2f48;
+    --border:    #3d3f5c;
+    --text:      #e2e4f0;
+    --text-dim:  #8b8da8;
+    --green:     #4ade80;
+    --yellow:    #facc15;
+    --red:       #f87171;
+    --blue:      #60a5fa;
+    --purple:    #a78bfa;
+    --cyan:      #22d3ee;
+    --radius:    8px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+}
+
+/* ─── Header ────────────────────────────────────────────────────── */
+
+header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+header h1 .icon {
+    font-size: 1.5rem;
+}
+
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.status-dot.green  { background: var(--green); }
+.status-dot.yellow { background: var(--yellow); }
+.status-dot.red    { background: var(--red); }
+.status-dot.purple { background: var(--purple); }
+
+nav {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+nav a:hover, nav a.active {
+    color: var(--text);
+    background: var(--card);
+}
+
+/* ─── Main Content ──────────────────────────────────────────────── */
+
+main {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ─── Node Grid ─────────────────────────────────────────────────── */
+
+.node-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.node-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.node-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-2px);
+}
+
+.node-card.alert-warn {
+    border-left: 4px solid var(--yellow);
+}
+
+.node-card.alert-crit {
+    border-left: 4px solid var(--red);
+}
+
+.node-card.offline {
+    opacity: 0.6;
+    border-left: 4px solid var(--purple);
+}
+
+.node-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.node-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.node-id {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.node-status {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.node-status.online  { background: rgba(74,222,128,0.15); color: var(--green); }
+.node-status.offline { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+/* ─── Temperature Display ───────────────────────────────────────── */
+
+.temps {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.temp-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--surface);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    min-width: 80px;
+}
+
+.temp-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.temp-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.temp-value.ok   { color: var(--green); }
+.temp-value.warn { color: var(--yellow); }
+.temp-value.crit { color: var(--red); }
+.temp-value.err  { color: var(--text-dim); }
+
+.temp-unit {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+
+/* ─── Meta Info ─────────────────────────────────────────────────── */
+
+.node-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.node-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ─── Detail Page ───────────────────────────────────────────────── */
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.detail-header h2 {
+    font-size: 1.5rem;
+}
+
+.back-btn {
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.chart-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    min-height: 300px;
+}
+
+/* ─── Admin Page ────────────────────────────────────────────────── */
+
+.admin-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.admin-section h3 {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+}
+
+.form-group input, .form-group select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--blue);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-danger {
+    background: var(--red);
+    color: #fff;
+}
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+/* ─── Table ─────────────────────────────────────────────────────── */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* ─── Toast Notifications ───────────────────────────────────────── */
+
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toast {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    animation: slideIn 0.3s ease;
+    min-width: 250px;
+}
+
+.toast.success { border-left: 4px solid var(--green); }
+.toast.error   { border-left: 4px solid var(--red); }
+.toast.info    { border-left: 4px solid var(--blue); }
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(100px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+    header { padding: 12px 16px; }
+    nav { padding: 6px 16px; overflow-x: auto; }
+    main { padding: 16px; }
+    .node-grid { grid-template-columns: 1fr; }
+    .header-status { display: none; }
+}
+
+/* ─── Loading Spinner ───────────────────────────────────────────── */
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 40px auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─── Empty State ───────────────────────────────────────────────── */
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+}
+
+.empty-state .icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    font-size: 0.95rem;
+    max-width: 400px;
+    margin: 0 auto;
+}

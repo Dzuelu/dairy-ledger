@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DairyLedger — Export Data</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1><span class="icon">📋</span> DairyLedger</h1>
+    </header>
+
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/export.html" class="active">Export</a>
+    </nav>
+
+    <main>
+        <h2 style="margin-bottom:20px">Export Data</h2>
+
+        <div class="admin-section">
+            <h3>📥 Download CSV</h3>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px">
+                Download temperature log data as CSV files for compliance
+                records, spreadsheet analysis, or archival.
+            </p>
+
+            <div class="form-group">
+                <label for="export-node">Select Node</label>
+                <select id="export-node" onchange="loadDates()">
+                    <option value="">Loading nodes...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="export-date">Select Date</label>
+                <select id="export-date">
+                    <option value="">Select a node first</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="downloadCSV()">
+                📥 Download CSV
+            </button>
+        </div>
+
+        <!-- Download All -->
+        <div class="admin-section">
+            <h3>📦 Download All Nodes</h3>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px">
+                Download a combined CSV with data from all nodes for a given date.
+                Each row is prefixed with the node ID and label for easy filtering.
+            </p>
+
+            <div class="form-group">
+                <label for="export-all-date">Select Date</label>
+                <input type="date" id="export-all-date"
+                       style="background:var(--surface);border:1px solid var(--border);
+                              color:var(--text);padding:8px 12px;border-radius:8px;
+                              font-size:0.9rem;max-width:300px">
+            </div>
+
+            <button class="btn btn-primary" onclick="downloadAllCSV()" id="btn-download-all">
+                📦 Download All Nodes
+            </button>
+        </div>
+
+        <!-- Preview -->
+        <div class="admin-section">
+            <h3>👁️ Preview</h3>
+            <div id="preview" style="font-family:monospace;font-size:0.8rem;
+                                      max-height:400px;overflow-y:auto;
+                                      color:var(--text-dim)">
+                Select a node and date to preview data
+            </div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toasts"></div>
+
+    <script>
+        function toast(msg, type = 'info') {
+            const c = document.getElementById('toasts');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = msg;
+            c.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        async function loadNodes() {
+            try {
+                const resp = await fetch('/api/nodes');
+                const nodes = await resp.json();
+                const sel = document.getElementById('export-node');
+
+                sel.innerHTML = '<option value="">Choose a node...</option>';
+                nodes.forEach(n => {
+                    sel.innerHTML += `<option value="${n.id}">${n.label} (${n.id})</option>`;
+                });
+            } catch (e) {
+                console.error('Failed to load nodes:', e);
+            }
+        }
+
+        async function loadDates() {
+            const nodeId = document.getElementById('export-node').value;
+            const dateSel = document.getElementById('export-date');
+
+            if (!nodeId) {
+                dateSel.innerHTML = '<option value="">Select a node first</option>';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/node/${nodeId}`);
+                const node = await resp.json();
+
+                if (node.dates && node.dates.length > 0) {
+                    const dates = typeof node.dates === 'string'
+                        ? JSON.parse(node.dates) : node.dates;
+
+                    dateSel.innerHTML = '<option value="">Choose a date...</option>';
+                    dates.sort().reverse().forEach(d => {
+                        dateSel.innerHTML += `<option value="${d}">${d}</option>`;
+                    });
+                } else {
+                    dateSel.innerHTML = '<option value="">No data available</option>';
+                }
+            } catch (e) {
+                dateSel.innerHTML = '<option value="">Error loading dates</option>';
+            }
+        }
+
+        async function downloadCSV() {
+            const nodeId = document.getElementById('export-node').value;
+            const date = document.getElementById('export-date').value;
+
+            if (!nodeId || !date) {
+                toast('Please select a node and date', 'error');
+                return;
+            }
+
+            // Preview first
+            try {
+                const resp = await fetch(`/api/node/${nodeId}/data?date=${date}`);
+                if (!resp.ok) throw new Error('No data');
+                const csv = await resp.text();
+
+                // Show preview
+                const preview = document.getElementById('preview');
+                const lines = csv.trim().split('\n');
+                preview.innerHTML = `<strong>${lines.length} rows</strong><br><br>` +
+                    lines.slice(0, 20).map(l => escapeHtml(l)).join('<br>') +
+                    (lines.length > 20 ? `<br>... and ${lines.length - 20} more rows` : '');
+
+                // Trigger download
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${nodeId}_${date}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                toast(`Downloaded ${lines.length} rows`, 'success');
+            } catch (e) {
+                toast('No data available for this date', 'error');
+            }
+        }
+
+        let allNodes = [];  // Cached for download-all
+
+        async function downloadAllCSV() {
+            const dateInput = document.getElementById('export-all-date');
+            const date = dateInput.value;
+
+            if (!date) {
+                toast('Please select a date', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-download-all');
+            btn.textContent = '⏳ Fetching...';
+            btn.disabled = true;
+
+            try {
+                // Fetch node list if needed
+                if (allNodes.length === 0) {
+                    const resp = await fetch('/api/nodes');
+                    allNodes = await resp.json();
+                }
+
+                if (allNodes.length === 0) {
+                    toast('No nodes registered', 'error');
+                    return;
+                }
+
+                // Fetch each node's data and combine
+                let combined = 'node_id,node_label,timestamp,temperatures...\n';
+                let totalRows = 0;
+                let nodesWithData = 0;
+
+                for (const node of allNodes) {
+                    try {
+                        const resp = await fetch(`/api/node/${node.id}/data?date=${date}`);
+                        if (!resp.ok) continue;
+                        const csv = await resp.text();
+                        const lines = csv.trim().split('\n').filter(l => l.length > 0);
+
+                        for (const line of lines) {
+                            combined += `${node.id},${node.label},${line}\n`;
+                            totalRows++;
+                        }
+                        nodesWithData++;
+                    } catch (e) {
+                        // Skip nodes with no data for this date
+                    }
+                }
+
+                if (totalRows === 0) {
+                    toast('No data found for any node on this date', 'error');
+                    return;
+                }
+
+                // Show preview
+                const preview = document.getElementById('preview');
+                const previewLines = combined.trim().split('\n');
+                preview.innerHTML = `<strong>${totalRows} rows from ${nodesWithData} node(s)</strong><br><br>` +
+                    previewLines.slice(0, 25).map(l => escapeHtml(l)).join('<br>') +
+                    (previewLines.length > 25 ? `<br>... and ${previewLines.length - 25} more rows` : '');
+
+                // Trigger download
+                const blob = new Blob([combined], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `all_nodes_${date}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                toast(`Downloaded ${totalRows} rows from ${nodesWithData} nodes`, 'success');
+            } catch (e) {
+                toast('Failed to download data', 'error');
+            } finally {
+                btn.textContent = '📦 Download All Nodes';
+                btn.disabled = false;
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        loadNodes();
+        // Default the "all nodes" date picker to today
+        document.getElementById('export-all-date').value =
+            new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>

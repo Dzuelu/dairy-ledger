@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DairyLedger Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1><span class="icon">📋</span> DairyLedger</h1>
+        <div class="header-status">
+            <span id="gateway-time">--:--</span>
+            <span><span class="status-dot green" id="gateway-dot"></span>
+                  <span id="gateway-status">Connecting...</span></span>
+        </div>
+    </header>
+
+    <nav>
+        <a href="/" class="active">Dashboard</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/export.html">Export</a>
+    </nav>
+
+    <main>
+        <div id="node-grid" class="node-grid">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display:none">
+            <div class="icon">📡</div>
+            <p>No nodes detected yet. Power on a sensor node and it will
+               appear here automatically.</p>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toasts"></div>
+
+    <script src="/dashboard.js"></script>
+</body>
+</html>

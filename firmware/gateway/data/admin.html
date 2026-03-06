@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DairyLedger — Admin</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1><span class="icon">📋</span> DairyLedger</h1>
+    </header>
+
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="/admin.html" class="active">Admin</a>
+        <a href="/export.html">Export</a>
+    </nav>
+
+    <main>
+        <h2 style="margin-bottom:20px">Administration</h2>
+
+        <!-- Gateway Status -->
+        <div class="admin-section">
+            <h3>🖥️ Gateway Status</h3>
+            <table>
+                <tr><td style="color:var(--text-dim)">Uptime</td><td id="gw-uptime">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Time</td><td id="gw-time">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Clock Source</td><td id="gw-clock">—</td></tr>
+                <tr><td style="color:var(--text-dim)">DS3231 RTC</td><td id="gw-rtc">—</td></tr>
+                <tr><td style="color:var(--text-dim)">NTP Sync</td><td id="gw-ntp">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Free Heap</td><td id="gw-heap">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Nodes</td><td id="gw-nodes">—</td></tr>
+            </table>
+        </div>
+
+        <!-- WiFi Settings -->
+        <div class="admin-section">
+            <h3>📶 WiFi Settings</h3>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px">
+                Connect the gateway to your home WiFi for NTP time sync and
+                network access. The open <code>DairyLedger</code> AP always runs as a
+                fallback — if WiFi drops, reconnection is retried automatically
+                every 30 seconds.
+            </p>
+            <div class="form-group">
+                <label for="wifi-ssid">WiFi Network Name (SSID)</label>
+                <input type="text" id="wifi-ssid" placeholder="Your WiFi name">
+            </div>
+            <div class="form-group">
+                <label for="wifi-pass">WiFi Password</label>
+                <input type="password" id="wifi-pass" placeholder="Your WiFi password">
+            </div>
+            <button class="btn btn-primary" onclick="saveWifi()">Save & Reconnect</button>
+        </div>
+
+        <!-- Gateway Configuration -->
+        <div class="admin-section">
+            <h3>⚙️ Gateway Configuration</h3>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px">
+                System-wide defaults for new nodes and gateway behavior.
+                Individual node thresholds can be overridden on each node's detail page.
+            </p>
+
+            <h4 style="font-size:0.85rem; color:var(--text-dim); margin-bottom:12px">
+                Default Alert Thresholds
+            </h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:400px">
+                <div class="form-group">
+                    <label for="gw-def-warn-high">Warn High (°C)</label>
+                    <input type="number" id="gw-def-warn-high" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="gw-def-crit-high">Critical High (°C)</label>
+                    <input type="number" id="gw-def-crit-high" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="gw-def-warn-low">Warn Low (°C)</label>
+                    <input type="number" id="gw-def-warn-low" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="gw-def-crit-low">Critical Low (°C)</label>
+                    <input type="number" id="gw-def-crit-low" step="0.1">
+                </div>
+            </div>
+
+            <h4 style="font-size:0.85rem; color:var(--text-dim); margin:16px 0 12px;
+                       padding-top:16px; border-top:1px solid var(--border)">
+                Timing
+            </h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:400px">
+                <div class="form-group">
+                    <label for="gw-def-interval">Default Reading Interval (min)</label>
+                    <input type="number" id="gw-def-interval" min="1" max="1440" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="gw-node-timeout">Node Offline Timeout (min)</label>
+                    <input type="number" id="gw-node-timeout" min="5" max="1440" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="gw-ntp-interval">NTP Sync Interval (min)</label>
+                    <input type="number" id="gw-ntp-interval" min="5" max="1440" step="5">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top:8px" onclick="saveGatewayConfig()">
+                💾 Save Gateway Config
+            </button>
+        </div>
+
+        <!-- Node Management -->
+        <div class="admin-section">
+            <h3>📋 Registered Nodes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Label</th>
+                        <th>Status</th>
+                        <th>Probes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="node-table">
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-dim)">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toasts"></div>
+
+    <script>
+        const QUALITY_MAP = { 0: 'No Clock', 1: 'RTC Only', 2: 'NTP Synced' };
+
+        function toast(msg, type = 'info') {
+            const c = document.getElementById('toasts');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = msg;
+            c.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        function formatUptime(sec) {
+            const d = Math.floor(sec / 86400);
+            const h = Math.floor((sec % 86400) / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            if (d > 0) return `${d}d ${h}h ${m}m`;
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        async function loadStatus() {
+            try {
+                const resp = await fetch('/api/status');
+                const s = await resp.json();
+
+                document.getElementById('gw-uptime').textContent = formatUptime(s.uptime_sec);
+                document.getElementById('gw-time').textContent = s.time_iso || '—';
+                document.getElementById('gw-clock').textContent = QUALITY_MAP[s.time_quality] || '?';
+                document.getElementById('gw-rtc').textContent = s.has_rtc ? '✅ Detected' : '❌ Not found';
+                document.getElementById('gw-ntp').textContent = s.has_ntp ? '✅ Synced' : '⏳ Not synced';
+                document.getElementById('gw-heap').textContent = `${(s.free_heap / 1024).toFixed(1)} KB`;
+                document.getElementById('gw-nodes').textContent = s.node_count;
+            } catch (e) {
+                console.error('Status fetch failed:', e);
+            }
+        }
+
+        async function loadNodes() {
+            try {
+                const resp = await fetch('/api/nodes');
+                const nodes = await resp.json();
+
+                const tbody = document.getElementById('node-table');
+                if (nodes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No nodes registered</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = nodes.map(n => `
+                    <tr>
+                        <td><span class="node-id">${n.id}</span></td>
+                        <td><a href="/node.html?id=${n.id}" style="color:var(--blue);text-decoration:none">${n.label}</a></td>
+                        <td><span class="node-status ${n.online ? 'online' : 'offline'}">
+                            ${n.online ? 'Online' : 'Offline'}</span></td>
+                        <td>${n.probe_count}</td>
+                        <td>
+                            <button class="btn btn-danger" style="padding:4px 10px;font-size:0.8rem"
+                                    onclick="clearLogs('${n.id}', '${n.label.replace(/'/g, "\\'")}')">Clear Logs</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Nodes fetch failed:', e);
+            }
+        }
+
+        async function saveWifi() {
+            const ssid = document.getElementById('wifi-ssid').value.trim();
+            const pass = document.getElementById('wifi-pass').value;
+
+            if (!ssid) {
+                toast('Please enter a WiFi name', 'error');
+                return;
+            }
+
+            try {
+                const body = new URLSearchParams({ ssid, pass });
+                const resp = await fetch('/api/wifi', { method: 'POST', body });
+                if (resp.ok) {
+                    toast('WiFi settings saved — gateway will reconnect', 'success');
+                } else {
+                    toast('Failed to save WiFi settings', 'error');
+                }
+            } catch (e) {
+                toast('Network error', 'error');
+            }
+        }
+
+        async function clearLogs(nodeId, nodeLabel) {
+            if (!confirm(`⚠️ Are you sure you want to delete ALL logged data for "${nodeLabel}" (${nodeId})?\n\nThis action is permanent and cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/node/${nodeId}/data`, {
+                    method: 'DELETE'
+                });
+                if (resp.ok) {
+                    toast(`All logs cleared for ${nodeLabel}`, 'success');
+                } else {
+                    toast('Failed to clear logs', 'error');
+                }
+            } catch (e) {
+                toast('Network error', 'error');
+            }
+        }
+
+        async function loadGatewayConfig() {
+            try {
+                const resp = await fetch('/api/gateway/config');
+                const cfg = await resp.json();
+                document.getElementById('gw-def-warn-high').value = cfg.default_warn_high;
+                document.getElementById('gw-def-crit-high').value = cfg.default_crit_high;
+                document.getElementById('gw-def-warn-low').value = cfg.default_warn_low;
+                document.getElementById('gw-def-crit-low').value = cfg.default_crit_low;
+                document.getElementById('gw-def-interval').value = Math.round(cfg.reading_interval_sec / 60);
+                document.getElementById('gw-node-timeout').value = Math.round(cfg.node_timeout_sec / 60);
+                document.getElementById('gw-ntp-interval').value = cfg.ntp_sync_interval_min;
+            } catch (e) {
+                console.error('Failed to load gateway config:', e);
+            }
+        }
+
+        async function saveGatewayConfig() {
+            const intervalMin = parseFloat(document.getElementById('gw-def-interval').value);
+            const timeoutMin = parseFloat(document.getElementById('gw-node-timeout').value);
+            const ntpMin = parseFloat(document.getElementById('gw-ntp-interval').value);
+
+            if (!intervalMin || !timeoutMin || !ntpMin) {
+                toast('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const body = new URLSearchParams({
+                    default_warn_high: document.getElementById('gw-def-warn-high').value,
+                    default_crit_high: document.getElementById('gw-def-crit-high').value,
+                    default_warn_low: document.getElementById('gw-def-warn-low').value,
+                    default_crit_low: document.getElementById('gw-def-crit-low').value,
+                    reading_interval_sec: Math.round(intervalMin * 60),
+                    node_timeout_sec: Math.round(timeoutMin * 60),
+                    ntp_sync_interval_min: Math.round(ntpMin)
+                });
+                const resp = await fetch('/api/gateway/config', {
+                    method: 'POST', body
+                });
+                if (resp.ok) {
+                    toast('Gateway configuration saved!', 'success');
+                } else {
+                    toast('Failed to save gateway config', 'error');
+                }
+            } catch (e) {
+                toast('Network error', 'error');
+            }
+        }
+
+        loadStatus();
+        loadNodes();
+        loadGatewayConfig();
+        setInterval(loadStatus, 10000);
+        setInterval(loadNodes, 15000);
+    </script>
+</body>
+</html>

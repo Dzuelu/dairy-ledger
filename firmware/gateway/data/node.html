@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DairyLedger — Node Detail</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1><span class="icon">📋</span> DairyLedger</h1>
+        <div class="header-status">
+            <span id="gateway-time">--:--</span>
+        </div>
+    </header>
+
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/export.html">Export</a>
+    </nav>
+
+    <main>
+        <div class="detail-header">
+            <div>
+                <a href="/" class="back-btn">← Back to Dashboard</a>
+                <h2 id="node-label">Loading...</h2>
+                <span class="node-id" id="node-id"></span>
+            </div>
+            <span class="node-status" id="node-status"></span>
+        </div>
+
+        <!-- Current Readings -->
+        <div class="admin-section">
+            <h3>Current Readings</h3>
+            <div class="temps" id="node-temps">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Temperature Chart -->
+        <div class="chart-container">
+            <h3 style="margin-bottom:12px">24-Hour History</h3>
+            <canvas id="temp-chart" width="800" height="300"></canvas>
+            <p id="chart-empty" style="display:none; text-align:center; color:var(--text-dim); padding:40px">
+                No historical data available yet
+            </p>
+        </div>
+
+        <!-- Node Info -->
+        <div class="admin-section">
+            <h3>Node Information</h3>
+            <table>
+                <tr><td style="color:var(--text-dim)">Node ID</td><td id="info-id">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Label</td><td id="info-label">—</td></tr>
+                <tr><td style="color:var(--text-dim)">MAC Address</td><td id="info-mac">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Probes</td><td id="info-probes">—</td></tr>
+                <tr><td style="color:var(--text-dim)">SD Card</td><td id="info-sd">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Pending Sync</td><td id="info-pending">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Last Seen</td><td id="info-seen">—</td></tr>
+                <tr><td style="color:var(--text-dim)">Thresholds</td><td id="info-thresholds">—</td></tr>
+            </table>
+        </div>
+
+        <!-- Node Settings -->
+        <div class="admin-section">
+            <h3>⚙️ Node Settings</h3>
+
+            <div class="form-group">
+                <label for="edit-node-label">Node Name</label>
+                <input type="text" id="edit-node-label" placeholder="e.g. Main Fridge"
+                       maxlength="32" style="max-width:300px">
+            </div>
+            <button class="btn btn-primary" style="margin-bottom:20px" onclick="saveNodeLabel()">
+                💾 Save Node Name
+            </button>
+
+            <h4 style="font-size:0.9rem; color:var(--text-dim); margin-bottom:12px;
+                       padding-top:16px; border-top:1px solid var(--border)">
+                🏷️ Probe Labels
+            </h4>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px">
+                Name each probe for easy identification (e.g. "Top Shelf",
+                "Bottom Shelf", "Door Sensor").
+            </p>
+            <div id="probe-labels-form"></div>
+            <button class="btn btn-primary" style="margin-top:12px" onclick="saveProbeLabels()">
+                💾 Save Probe Labels
+            </button>
+        </div>
+
+        <!-- Node Configuration -->
+        <div class="admin-section">
+            <h3>🌡️ Node Configuration</h3>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:16px">
+                Temperature alert thresholds and reading interval. Changes are
+                pushed to the node via ESP-NOW the next time it wakes up.
+            </p>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:400px">
+                <div class="form-group">
+                    <label for="cfg-warn-high">Warn High (°C)</label>
+                    <input type="number" id="cfg-warn-high" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="cfg-crit-high">Critical High (°C)</label>
+                    <input type="number" id="cfg-crit-high" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="cfg-warn-low">Warn Low (°C)</label>
+                    <input type="number" id="cfg-warn-low" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="cfg-crit-low">Critical Low (°C)</label>
+                    <input type="number" id="cfg-crit-low" step="0.1">
+                </div>
+            </div>
+
+            <div class="form-group" style="max-width:200px; margin-top:4px">
+                <label for="cfg-interval">Reading Interval (minutes)</label>
+                <input type="number" id="cfg-interval" min="1" max="1440" step="1">
+            </div>
+
+            <button class="btn btn-primary" style="margin-top:8px" onclick="saveNodeConfig()">
+                💾 Save Configuration
+            </button>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toasts"></div>
+
+    <script src="/dashboard.js"></script>
+    <script src="/node-detail.js"></script>
+</body>
+</html>
