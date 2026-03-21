@@ -20,32 +20,55 @@ Assembly instructions for ESP32-C3-DevKitM-01 boards.
 
 ### Wiring Diagram
 
-```
-ESP32-C3-DevKitM-01
-┌────────────────────┐
-│                    │
-│  GPIO4  ──────────┼──── DS18B20 Data (yellow)
-│                    │       │
-│                    │     [4.7kΩ]
-│                    │       │
-│  3V3    ──────────┼───────┤── DS18B20 VCC (red)
-│                    │       │   (all probes share VCC & GND)
-│  GND    ──────────┼───────┴── DS18B20 GND (black)
-│                    │
-│  GPIO6  ──────────┼──── SD CLK  (SCK)
-│  GPIO5  ──────────┼──── SD MISO (DO)
-│  GPIO7  ──────────┼──── SD MOSI (DI)
-│  GPIO10 ──────────┼──── SD CS   (CS)
-│  3V3    ──────────┼──── SD VCC
-│  GND    ──────────┼──── SD GND
-│                    │
-│  GPIO1  ──────────┼──── Buzzer (+)
-│  GND    ──────────┼──── Buzzer (−)
-│                    │
-│  GPIO8  (built-in)│     WS2812 RGB LED (no wiring needed)
-│                    │
-│  USB-C   ← Power  │
-└────────────────────┘
+```mermaid
+graph LR
+    subgraph ESP32-C3-DevKitM-01
+        GPIO4
+        GPIO6
+        GPIO5
+        GPIO7
+        GPIO10
+        GPIO1
+        GPIO8["GPIO8 (built-in WS2812 RGB LED)"]
+        V3[3V3]
+        G[GND]
+        USB["USB-C ← Power"]
+    end
+
+    subgraph DS18B20["DS18B20 Probes"]
+        DATA["Data (yellow)"]
+        VCC["VCC (red)"]
+        PGND["GND (black)"]
+    end
+
+    subgraph SD["MicroSD Breakout"]
+        CLK["CLK (SCK)"]
+        MISO["MISO (DO)"]
+        MOSI["MOSI (DI)"]
+        CS
+        SVCC[SD VCC]
+        SGND[SD GND]
+    end
+
+    subgraph BUZ[Buzzer]
+        BPOS["+"]
+        BNEG["-"]
+    end
+
+    GPIO4 -->|"Data"| DATA
+    DATA ---|"4.7kΩ pull-up"| V3
+    V3 --> VCC
+    G --> PGND
+
+    GPIO6 --> CLK
+    GPIO5 --> MISO
+    GPIO7 --> MOSI
+    GPIO10 --> CS
+    V3 --> SVCC
+    G --> SGND
+
+    GPIO1 --> BPOS
+    G --> BNEG
 ```
 
 ### DS18B20 Multi-Probe Wiring
@@ -53,19 +76,18 @@ ESP32-C3-DevKitM-01
 All probes share the same 1-Wire bus on GPIO4. Each probe has a unique
 64-bit address and is automatically discovered.
 
-```
-        GPIO4
-          │
-        [4.7kΩ] to 3V3
-          │
-    ┌─────┼─────┬─────┐
-    │     │     │     │
-  Probe1 Probe2 Probe3 ...
-  (Data)  (Data) (Data)
-    │     │     │     │
-    └─────┴─────┴─────┘
-          │
-         GND
+```mermaid
+graph TD
+    V3[3V3] ---|"4.7kΩ pull-up"| BUS
+    GPIO4 --- BUS["1-Wire Bus"]
+    BUS --- P1["Probe 1 (Data)"]
+    BUS --- P2["Probe 2 (Data)"]
+    BUS --- P3["Probe 3 (Data)"]
+    BUS --- PN["Probe N ..."]
+    P1 --- GND
+    P2 --- GND
+    P3 --- GND
+    PN --- GND
 ```
 
 **Wire colors (standard DS18B20):**
@@ -97,29 +119,57 @@ All probes share the same 1-Wire bus on GPIO4. Each probe has a unique
 
 ### Wiring Diagram
 
-```
-ESP32-C3-DevKitM-01
-┌────────────────────┐
-│                    │
-│  GPIO3  ──────────┼──── DS3231 SDA
-│  GPIO2  ──────────┼──── DS3231 SCL
-│  3V3    ──────────┼──── DS3231 VCC
-│  GND    ──────────┼──── DS3231 GND
-│                    │
-│  GPIO6  ──────────┼──── SD CLK  (SCK)
-│  GPIO5  ──────────┼──── SD MISO (DO)
-│  GPIO7  ──────────┼──── SD MOSI (DI)
-│  GPIO10 ──────────┼──── SD CS   (CS)
-│  3V3    ──────────┼──── SD VCC
-│  GND    ──────────┼──── SD GND
-│                    │
-│  GPIO1  ──────────┼──── Buzzer (+)
-│  GND    ──────────┼──── Buzzer (−)
-│                    │
-│  GPIO8  (built-in)│     WS2812 RGB LED (no wiring needed)
-│                    │
-│  USB-C   ← Power  │
-└────────────────────┘
+```mermaid
+graph LR
+    subgraph ESP32-C3-DevKitM-01
+        GPIO3
+        GPIO2
+        GPIO6
+        GPIO5
+        GPIO7
+        GPIO10
+        GPIO1
+        GPIO8["GPIO8 (built-in WS2812 RGB LED)"]
+        V3[3V3]
+        G[GND]
+        USB["USB-C ← Power"]
+    end
+
+    subgraph RTC["DS3231 RTC Module"]
+        SDA
+        SCL
+        RVCC[VCC]
+        RGND[GND]
+    end
+
+    subgraph SD["MicroSD Breakout"]
+        CLK["CLK (SCK)"]
+        MISO["MISO (DO)"]
+        MOSI["MOSI (DI)"]
+        CS
+        SVCC[SD VCC]
+        SGND[SD GND]
+    end
+
+    subgraph BUZ[Buzzer]
+        BPOS["+"]
+        BNEG["-"]
+    end
+
+    GPIO3 -->|"I2C"| SDA
+    GPIO2 -->|"I2C"| SCL
+    V3 --> RVCC
+    G --> RGND
+
+    GPIO6 --> CLK
+    GPIO5 --> MISO
+    GPIO7 --> MOSI
+    GPIO10 --> CS
+    V3 --> SVCC
+    G --> SGND
+
+    GPIO1 --> BPOS
+    G --> BNEG
 ```
 
 ### DS3231 Module Pins
