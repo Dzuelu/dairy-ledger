@@ -71,7 +71,7 @@ pio device list
 The node firmware is the most common flash — one per fridge.
 
 ```bash
-cd /Users/kenneth.studer/git/goats/firmware/node
+cd firmware/node
 
 # Build (downloads dependencies on first run — takes ~2 min)
 pio run
@@ -118,7 +118,7 @@ The gateway has **two** flash steps: firmware + filesystem (dashboard files).
 ### Step 1: Flash the firmware
 
 ```bash
-cd /Users/kenneth.studer/git/goats/firmware/gateway
+cd firmware/gateway
 
 # Build
 pio run
@@ -167,7 +167,7 @@ laptop, then open **http://192.168.4.1** in a browser.
 Relays are optional range extenders. Same process as the node:
 
 ```bash
-cd /Users/kenneth.studer/git/goats/firmware/relay
+cd firmware/relay
 
 pio run
 pio run --target upload
